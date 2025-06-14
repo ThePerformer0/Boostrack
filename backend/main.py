@@ -1,8 +1,18 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from routes import task_routes
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+from db.db import create_db_and_tables
+
+# Lifespan = hook exécuté au démarrage et à l'arrêt de l'app
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 # CORS: autoriser React à accéder à l'API
 app.add_middleware(
@@ -13,6 +23,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-def read_root():
-    return {"message": "API FastAPI connectée à Boostrack Frontend 🎉"}
+app.include_router(task_routes.router)
