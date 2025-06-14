@@ -20,6 +20,15 @@ export const createTask = async (task: Task): Promise<Task> => {
   return await res.json()
 }
 
+export const updateTask = async (id: number, task: Partial<Task>): Promise<Task> => {
+  const res = await fetch(`${API_URL}/tasks/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(task),
+  })
+  return await res.json()
+}
+
 export const deleteTask = async (id: number): Promise<void> => {
   await fetch(`${API_URL}/tasks/${id}`, { method: "DELETE" })
 }
