@@ -1,7 +1,7 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import task_routes
+from routes import task_routes, note_routes
 from contextlib import asynccontextmanager
 
 from db.db import create_db_and_tables
@@ -23,4 +23,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(note_routes.router)
 app.include_router(task_routes.router)

@@ -1,60 +1,101 @@
-import { useEffect, useState } from "react"
-import { Plus, CheckCircle2, Circle, Trash2, Timer, FileText, BarChart3, Settings } from "lucide-react"
-import { getTasks, createTask, deleteTask, updateTask } from "./services/taskService"
-import type { Task } from "./services/taskService"
+import { useEffect, useState } from "react";
+import {
+  Plus,
+  CheckCircle2,
+  Circle,
+  Trash2,
+  Timer,
+  FileText,
+  BarChart3,
+  Settings,
+} from "lucide-react";
+import {
+  getTasks,
+  createTask,
+  deleteTask,
+  updateTask,
+} from "./services/taskService";
+import { getNotes, createNote, deleteNote } from "./services/noteService";
+
+import type { Task } from "./services/taskService";
+import type { Note } from "./services/noteService";
 
 function App() {
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [newTitle, setNewTitle] = useState("")
-  const [activeTab, setActiveTab] = useState("tasks") // tasks, notes, timer, stats
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [newTitle, setNewTitle] = useState("");
+  const [activeTab, setActiveTab] = useState("tasks"); // tasks, notes, timer, stats
 
-  // Intégration avec votre API backend
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [newNote, setNewNote] = useState(""); // Pour la section des notes
+
+  // Chargement initial des tâches et notes
   useEffect(() => {
-    getTasks().then(setTasks).catch(console.error)
-  }, [])
+    getTasks().then(setTasks).catch(console.error);
+    getNotes().then(setNotes).catch(console.error);
+  }, []);
 
   const handleAdd = async () => {
-    if (!newTitle.trim()) return
+    if (!newTitle.trim()) return;
     try {
       const newTask: Task = {
         id: Date.now(), // L'API assignera le vrai ID
         title: newTitle,
         done: false,
-      }
-      const created = await createTask(newTask)
-      setTasks(prev => [...prev, created])
-      setNewTitle("")
+      };
+      const created = await createTask(newTask);
+      setTasks((prev) => [...prev, created]);
+      setNewTitle("");
     } catch (error) {
-      console.error("Erreur lors de l'ajout:", error)
+      console.error("Erreur lors de l'ajout:", error);
     }
-  }
+  };
 
   const handleToggle = async (id: number) => {
     try {
-      const task = tasks.find(t => t.id === id)
+      const task = tasks.find((t) => t.id === id);
       if (task) {
-        const updated = await updateTask(id, { ...task, done: !task.done })
-        setTasks(prev => prev.map(t => t.id === id ? updated : t))
+        const updated = await updateTask(id, { ...task, done: !task.done });
+        setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
       }
     } catch (error) {
-      console.error("Erreur lors de la mise à jour:", error)
+      console.error("Erreur lors de la mise à jour:", error);
     }
-  }
+  };
 
   const handleDelete = async (id: number) => {
     try {
-      await deleteTask(id)
-      setTasks(prev => prev.filter(task => task.id !== id))
+      await deleteTask(id);
+      setTasks((prev) => prev.filter((task) => task.id !== id));
     } catch (error) {
-      console.error("Erreur lors de la suppression:", error)
+      console.error("Erreur lors de la suppression:", error);
     }
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleAdd()
+    if (e.key === "Enter") {
+      handleAdd();
     }
-  }
+  };
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+    try {
+      const created = await createNote({ content: newNote });
+      setNotes((prev) => [...prev, created]);
+      setNewNote("");
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la note :", error);
+    }
+  };
+
+  const handleDeleteNote = async (id: number) => {
+    try {
+      await deleteNote(id);
+      setNotes((prev) => prev.filter((note) => note.id !== id));
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la note :", error);
+    }
+  };
 
   return (
     <div className="app">
@@ -76,33 +117,33 @@ function App() {
       {/* Navigation principale */}
       <nav className="main-nav">
         <div className="nav-container">
-          <button 
-            className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tasks')}
+          <button
+            className={`nav-item ${activeTab === "tasks" ? "active" : ""}`}
+            onClick={() => setActiveTab("tasks")}
           >
             <CheckCircle2 size={20} />
             <span>Tâches</span>
           </button>
-          
-          <button 
-            className={`nav-item ${activeTab === 'notes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('notes')}
+
+          <button
+            className={`nav-item ${activeTab === "notes" ? "active" : ""}`}
+            onClick={() => setActiveTab("notes")}
           >
             <FileText size={20} />
             <span>Notes</span>
           </button>
-          
-          <button 
-            className={`nav-item ${activeTab === 'timer' ? 'active' : ''}`}
-            onClick={() => setActiveTab('timer')}
+
+          <button
+            className={`nav-item ${activeTab === "timer" ? "active" : ""}`}
+            onClick={() => setActiveTab("timer")}
           >
             <Timer size={20} />
             <span>Minuteur</span>
           </button>
-          
-          <button 
-            className={`nav-item ${activeTab === 'stats' ? 'active' : ''}`}
-            onClick={() => setActiveTab('stats')}
+
+          <button
+            className={`nav-item ${activeTab === "stats" ? "active" : ""}`}
+            onClick={() => setActiveTab("stats")}
           >
             <BarChart3 size={20} />
             <span>Stats</span>
@@ -112,7 +153,7 @@ function App() {
 
       {/* Contenu principal */}
       <main className="main-content">
-        {activeTab === 'tasks' && (
+        {activeTab === "tasks" && (
           <div className="tasks-section">
             {/* Section d'ajout de tâche */}
             <div className="add-task-section">
@@ -126,7 +167,7 @@ function App() {
                     placeholder="Ajouter une nouvelle tâche..."
                     className="task-input"
                   />
-                  <button 
+                  <button
                     onClick={handleAdd}
                     className="add-btn"
                     disabled={!newTitle.trim()}
@@ -142,7 +183,7 @@ function App() {
               <div className="tasks-header">
                 <h2>Mes tâches</h2>
                 <span className="tasks-count">
-                  {tasks.filter(t => !t.done).length} en cours
+                  {tasks.filter((t) => !t.done).length} en cours
                 </span>
               </div>
 
@@ -155,19 +196,26 @@ function App() {
                   </div>
                 ) : (
                   tasks.map((task) => (
-                    <div key={task.id} className={`task-item ${task.done ? 'completed' : ''}`}>
+                    <div
+                      key={task.id}
+                      className={`task-item ${task.done ? "completed" : ""}`}
+                    >
                       <button
                         className="task-toggle"
                         onClick={() => handleToggle(task.id)}
                       >
-                        {task.done ? 
-                          <CheckCircle2 size={20} className="check-icon completed" /> : 
+                        {task.done ? (
+                          <CheckCircle2
+                            size={20}
+                            className="check-icon completed"
+                          />
+                        ) : (
                           <Circle size={20} className="check-icon" />
-                        }
+                        )}
                       </button>
-                      
+
                       <span className="task-title">{task.title}</span>
-                      
+
                       <button
                         className="delete-btn"
                         onClick={() => handleDelete(task.id)}
@@ -182,17 +230,38 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'notes' && (
+        {activeTab === "notes" && (
           <div className="notes-section">
-            <div className="coming-soon">
-              <div className="coming-soon-icon">📝</div>
-              <h2>Notes</h2>
-              <p>Fonctionnalité en cours de développement...</p>
+            <div className="add-note">
+              <textarea
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="Écris ta note ici..."
+                rows={3}
+              />
+              <button onClick={handleAddNote} disabled={!newNote.trim()}>
+                Ajouter la note
+              </button>
+            </div>
+
+            <div className="notes-list">
+              {notes.length === 0 ? (
+                <p>Aucune note pour l’instant</p>
+              ) : (
+                notes.map((note) => (
+                  <div key={note.id} className="note-item">
+                    <p>{note.content}</p>
+                    <button onClick={() => handleDeleteNote(note.id)}>
+                      🗑️
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
 
-        {activeTab === 'timer' && (
+        {activeTab === "timer" && (
           <div className="timer-section">
             <div className="coming-soon">
               <div className="coming-soon-icon">⏱️</div>
@@ -202,7 +271,7 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'stats' && (
+        {activeTab === "stats" && (
           <div className="stats-section">
             <div className="coming-soon">
               <div className="coming-soon-icon">📊</div>
@@ -215,10 +284,12 @@ function App() {
 
       {/* Footer optionnel */}
       <footer className="app-footer">
-        <p className="footer-text">PerformerTrack - Votre compagnon de productivité</p>
+        <p className="footer-text">
+          PerformerTrack - Votre compagnon de productivité
+        </p>
       </footer>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

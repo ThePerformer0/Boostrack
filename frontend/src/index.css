@@ -679,3 +679,331 @@ body {
     font-size: 1.25rem;
   }
 }
+
+/* ==========================================
+   SECTION NOTES
+   ========================================== */
+
+.notes-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ==========================================
+   ZONE D'AJOUT DE NOTE
+   ========================================== */
+
+.add-note {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-light);
+  animation: slideInScale 0.6s ease-out 0.2s both;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.add-note textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 120px;
+  transition: all var(--transition-normal);
+  backdrop-filter: blur(10px);
+}
+
+.add-note textarea:focus {
+  outline: none;
+  border-color: rgba(102, 126, 234, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+  transform: scale(1.02);
+}
+
+.add-note textarea::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.add-note textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.add-note textarea::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.add-note textarea::-webkit-scrollbar-thumb {
+  background: var(--primary-gradient);
+  border-radius: 3px;
+}
+
+.add-note textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-gradient);
+}
+
+.add-note button {
+  align-self: flex-end;
+  background: var(--primary-gradient);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.add-note button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s ease-out;
+}
+
+.add-note button:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.add-note button:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow-medium);
+}
+
+.add-note button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--text-muted);
+}
+
+/* ==========================================
+   LISTE DES NOTES
+   ========================================== */
+
+.notes-list {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-light);
+  animation: slideInScale 0.6s ease-out 0.4s both;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Message vide pour les notes */
+.notes-list > p {
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: var(--spacing-xl);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--border-color);
+  animation: fadeIn 0.6s ease-out;
+}
+
+/* ==========================================
+   ITEMS DE NOTE
+   ========================================== */
+
+.note-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  transition: all var(--transition-normal);
+  animation: noteItemIn 0.4s ease-out both;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+.note-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.6s ease-out;
+}
+
+.note-item:hover::before {
+  left: 100%;
+}
+
+.note-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(102, 126, 234, 0.3);
+  transform: translateX(8px);
+  box-shadow: var(--shadow-medium);
+}
+
+.note-item p {
+  flex: 1;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0;
+  font-size: 1rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.note-item button {
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  opacity: 0;
+  transform: scale(0.8);
+  font-size: 1.2rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.note-item:hover button {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.note-item button:hover {
+  background: rgba(244, 67, 54, 0.2);
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+}
+
+/* ==========================================
+   ANIMATIONS SPÉCIFIQUES AUX NOTES
+   ========================================== */
+
+@keyframes noteItemIn {
+  from {
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Effet de "papier" pour les notes */
+.note-item::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.02) 50%, transparent 100%),
+    linear-gradient(0deg, transparent 0%, rgba(255, 255, 255, 0.01) 50%, transparent 100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.note-item:hover::after {
+  opacity: 1;
+}
+
+/* ==========================================
+   RESPONSIVE POUR LES NOTES
+   ========================================== */
+
+@media (max-width: 768px) {
+  .add-note {
+    padding: var(--spacing-md);
+  }
+  
+  .add-note textarea {
+    min-height: 100px;
+  }
+  
+  .add-note button {
+    align-self: stretch;
+    padding: var(--spacing-sm);
+  }
+  
+  .notes-list {
+    padding: var(--spacing-md);
+  }
+  
+  .note-item {
+    padding: var(--spacing-sm);
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .note-item button {
+    align-self: flex-end;
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .add-note textarea {
+    min-height: 80px;
+    font-size: 0.9rem;
+  }
+  
+  .note-item p {
+    font-size: 0.9rem;
+  }
+  
+  .note-item button {
+    font-size: 1rem;
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* ==========================================
+   AMÉLIORATION VISUELLE SUPPLÉMENTAIRE
+   ========================================== */
+
+/* Effet de brillance subtile sur les notes */
+.note-item {
+  background-image: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+}
+
+/* Animation d'apparition progressive pour plusieurs notes */
+.note-item:nth-child(1) { animation-delay: 0.1s; }
+.note-item:nth-child(2) { animation-delay: 0.2s; }
+.note-item:nth-child(3) { animation-delay: 0.3s; }
+.note-item:nth-child(4) { animation-delay: 0.4s; }
+.note-item:nth-child(5) { animation-delay: 0.5s; }
+.note-item:nth-child(n+6) { animation-delay: 0.6s; }
