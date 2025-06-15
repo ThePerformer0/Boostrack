@@ -1,101 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState } from "react"
+import TasksSection from "./components/TasksSection"
+import NotesSection from "./components/NotesSection"
+import TimerSection from "./components/TimerSection"
+import StatsSection from "./components/StatsSection"
+
 import {
-  Plus,
   CheckCircle2,
-  Circle,
-  Trash2,
-  Timer,
   FileText,
+  Timer,
   BarChart3,
   Settings,
-} from "lucide-react";
-import {
-  getTasks,
-  createTask,
-  deleteTask,
-  updateTask,
-} from "./services/taskService";
-import { getNotes, createNote, deleteNote } from "./services/noteService";
-
-import type { Task } from "./services/taskService";
-import type { Note } from "./services/noteService";
+} from "lucide-react"
 
 function App() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [newTitle, setNewTitle] = useState("");
-  const [activeTab, setActiveTab] = useState("tasks"); // tasks, notes, timer, stats
-
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [newNote, setNewNote] = useState(""); // Pour la section des notes
-
-  // Chargement initial des tâches et notes
-  useEffect(() => {
-    getTasks().then(setTasks).catch(console.error);
-    getNotes().then(setNotes).catch(console.error);
-  }, []);
-
-  const handleAdd = async () => {
-    if (!newTitle.trim()) return;
-    try {
-      const newTask: Task = {
-        id: Date.now(), // L'API assignera le vrai ID
-        title: newTitle,
-        done: false,
-      };
-      const created = await createTask(newTask);
-      setTasks((prev) => [...prev, created]);
-      setNewTitle("");
-    } catch (error) {
-      console.error("Erreur lors de l'ajout:", error);
-    }
-  };
-
-  const handleToggle = async (id: number) => {
-    try {
-      const task = tasks.find((t) => t.id === id);
-      if (task) {
-        const updated = await updateTask(id, { ...task, done: !task.done });
-        setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
-      }
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour:", error);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteTask(id);
-      setTasks((prev) => prev.filter((task) => task.id !== id));
-    } catch (error) {
-      console.error("Erreur lors de la suppression:", error);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleAdd();
-    }
-  };
-
-  const handleAddNote = async () => {
-    if (!newNote.trim()) return;
-    try {
-      const created = await createNote({ content: newNote });
-      setNotes((prev) => [...prev, created]);
-      setNewNote("");
-    } catch (error) {
-      console.error("Erreur lors de l'ajout de la note :", error);
-    }
-  };
-
-  const handleDeleteNote = async (id: number) => {
-    try {
-      await deleteNote(id);
-      setNotes((prev) => prev.filter((note) => note.id !== id));
-    } catch (error) {
-      console.error("Erreur lors de la suppression de la note :", error);
-    }
-  };
+  const [activeTab, setActiveTab] = useState("tasks") // tasks, notes, timer, stats
 
   return (
     <div className="app">
@@ -153,143 +71,20 @@ function App() {
 
       {/* Contenu principal */}
       <main className="main-content">
-        {activeTab === "tasks" && (
-          <div className="tasks-section">
-            {/* Section d'ajout de tâche */}
-            <div className="add-task-section">
-              <div className="add-task-container">
-                <div className="input-group">
-                  <input
-                    type="text"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Ajouter une nouvelle tâche..."
-                    className="task-input"
-                  />
-                  <button
-                    onClick={handleAdd}
-                    className="add-btn"
-                    disabled={!newTitle.trim()}
-                  >
-                    <Plus size={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Liste des tâches */}
-            <div className="tasks-container">
-              <div className="tasks-header">
-                <h2>Mes tâches</h2>
-                <span className="tasks-count">
-                  {tasks.filter((t) => !t.done).length} en cours
-                </span>
-              </div>
-
-              <div className="tasks-list">
-                {tasks.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-icon">📝</div>
-                    <h3>Aucune tâche</h3>
-                    <p>Ajoutez votre première tâche pour commencer !</p>
-                  </div>
-                ) : (
-                  tasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className={`task-item ${task.done ? "completed" : ""}`}
-                    >
-                      <button
-                        className="task-toggle"
-                        onClick={() => handleToggle(task.id)}
-                      >
-                        {task.done ? (
-                          <CheckCircle2
-                            size={20}
-                            className="check-icon completed"
-                          />
-                        ) : (
-                          <Circle size={20} className="check-icon" />
-                        )}
-                      </button>
-
-                      <span className="task-title">{task.title}</span>
-
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(task.id)}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "notes" && (
-          <div className="notes-section">
-            <div className="add-note">
-              <textarea
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                placeholder="Écris ta note ici..."
-                rows={3}
-              />
-              <button onClick={handleAddNote} disabled={!newNote.trim()}>
-                Ajouter la note
-              </button>
-            </div>
-
-            <div className="notes-list">
-              {notes.length === 0 ? (
-                <p>Aucune note pour l’instant</p>
-              ) : (
-                notes.map((note) => (
-                  <div key={note.id} className="note-item">
-                    <p>{note.content}</p>
-                    <button onClick={() => handleDeleteNote(note.id)}>
-                      🗑️
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === "timer" && (
-          <div className="timer-section">
-            <div className="coming-soon">
-              <div className="coming-soon-icon">⏱️</div>
-              <h2>Minuteur Pomodoro</h2>
-              <p>Fonctionnalité en cours de développement...</p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "stats" && (
-          <div className="stats-section">
-            <div className="coming-soon">
-              <div className="coming-soon-icon">📊</div>
-              <h2>Statistiques</h2>
-              <p>Fonctionnalité en cours de développement...</p>
-            </div>
-          </div>
-        )}
+        {activeTab === "tasks" && <TasksSection />}
+        {activeTab === "notes" && <NotesSection />}
+        {activeTab === "timer" && <TimerSection />}
+        {activeTab === "stats" && <StatsSection />}
       </main>
 
-      {/* Footer optionnel */}
+      {/* Footer */}
       <footer className="app-footer">
         <p className="footer-text">
-          PerformerTrack - Votre compagnon de productivité
+          Boostrack – Votre compagnon de productivité
         </p>
       </footer>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App

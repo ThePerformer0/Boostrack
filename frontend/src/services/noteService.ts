@@ -1,6 +1,8 @@
 export interface Note {
   id: number
   content: string
+  created_at: string
+  updated_at: string
 }
 
 const API_URL = "http://127.0.0.1:8000"
@@ -24,3 +26,13 @@ export const deleteNote = async (id: number): Promise<void> => {
     method: "DELETE",
   })
 }
+
+export const updateNote = async (id: number, data: Omit<Note, "id" | "created_at" | "updated_at">): Promise<Note> => {
+  const res = await fetch(`${API_URL}/notes/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  return await res.json()
+}
+
