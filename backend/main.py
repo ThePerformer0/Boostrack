@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes import task_routes, note_routes
 from contextlib import asynccontextmanager
+from routes.work_session_routes import router as work_session_router
 
 from db.db import create_db_and_tables
 
@@ -25,3 +26,4 @@ app.add_middleware(
 
 app.include_router(note_routes.router)
 app.include_router(task_routes.router)
+app.include_router(work_session_router)

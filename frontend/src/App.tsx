@@ -1,19 +1,15 @@
-import { useState } from "react"
-import TasksSection from "./components/TasksSection"
-import NotesSection from "./components/NotesSection"
-import TimerSection from "./components/TimerSection"
-import StatsSection from "./components/StatsSection"
+// App.tsx
+import { useState } from "react";
+import TasksSection from "./components/TasksSection";
+import NotesSection from "./components/NotesSection";
+import TimerSection from "./components/TimerSection";
+import StatsSection from "./components/StatsSection";
 
-import {
-  CheckCircle2,
-  FileText,
-  Timer,
-  BarChart3,
-  Settings,
-} from "lucide-react"
+// Importez les icônes spécifiques de la collection choisie
+import { MdCheckCircle, MdNotes, MdTimer, MdBarChart, MdSettings } from "react-icons/md"; // Exemples Material Design Filled
 
 function App() {
-  const [activeTab, setActiveTab] = useState("tasks") // tasks, notes, timer, stats
+  const [activeTab, setActiveTab] = useState("tasks"); // tasks, notes, timer, stats
 
   return (
     <div className="app">
@@ -26,7 +22,7 @@ function App() {
           </div>
           <div className="header-actions">
             <button className="settings-btn">
-              <Settings size={20} />
+              <MdSettings size={20} /> {/* Utilisation de la nouvelle icône */}
             </button>
           </div>
         </div>
@@ -39,7 +35,7 @@ function App() {
             className={`nav-item ${activeTab === "tasks" ? "active" : ""}`}
             onClick={() => setActiveTab("tasks")}
           >
-            <CheckCircle2 size={20} />
+            <MdCheckCircle size={20} /> {/* Nouvelle icône */}
             <span>Tâches</span>
           </button>
 
@@ -47,7 +43,7 @@ function App() {
             className={`nav-item ${activeTab === "notes" ? "active" : ""}`}
             onClick={() => setActiveTab("notes")}
           >
-            <FileText size={20} />
+            <MdNotes size={20} /> {/* Nouvelle icône */}
             <span>Notes</span>
           </button>
 
@@ -55,7 +51,7 @@ function App() {
             className={`nav-item ${activeTab === "timer" ? "active" : ""}`}
             onClick={() => setActiveTab("timer")}
           >
-            <Timer size={20} />
+            <MdTimer size={20} /> {/* Nouvelle icône */}
             <span>Minuteur</span>
           </button>
 
@@ -63,7 +59,7 @@ function App() {
             className={`nav-item ${activeTab === "stats" ? "active" : ""}`}
             onClick={() => setActiveTab("stats")}
           >
-            <BarChart3 size={20} />
+            <MdBarChart size={20} /> {/* Nouvelle icône */}
             <span>Stats</span>
           </button>
         </div>
@@ -84,7 +80,7 @@ function App() {
         </p>
       </footer>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

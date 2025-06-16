@@ -1,374 +1,234 @@
-import { useState, useEffect, useRef } from "react"
-import { Play, Pause, RotateCcw, Clock, Coffee, Focus } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import "../styles/timer.css"
+// Importez les icônes de React Icons pour le minuteur
+import { FaPlay, FaPause, FaRedo, FaBellSlash, FaMugHot, FaLaptopCode } from "react-icons/fa"
 
-type TimerMode = 'pomodoro' | 'custom'
-type PomodoroPhase = 'work' | 'break'
+const WORK_DURATION = 25 * 60
+const BREAK_DURATION = 5 * 60
+const ALARM_DURATION = 60
+const STORAGE_KEY = "boostrack_timer_state"
 
 export default function TimerSection() {
-  // États principaux
-  const [mode, setMode] = useState<TimerMode>('pomodoro')
-  const [isRunning, setIsRunning] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(25 * 60) // 25 minutes en secondes
+  const [mode, setMode] = useState<"pomodoro" | "custom">("pomodoro")
   const [customHours, setCustomHours] = useState(0)
-  const [customMinutes, setCustomMinutes] = useState(25)
-  
-  // États spécifiques au Pomodoro
-  const [pomodoroPhase, setPomodoroPhase] = useState<PomodoroPhase>('work')
-  const [pomodoroCount, setPomodoroCount] = useState(0)
-  
-  // Références pour les timers et audio
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  const alarmIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const alarmTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const audioContextRef = useRef<AudioContext | null>(null)
-  
-  // États pour l'alarme
-  const [isAlarmRinging, setIsAlarmRinging] = useState(false)
-  
-  // Configuration Pomodoro
-  const WORK_TIME = 25 * 60 // 25 minutes
-  const BREAK_TIME = 5 * 60 // 5 minutes
+  const [customMinutes, setCustomMinutes] = useState(10)
+  const [timeLeft, setTimeLeft] = useState(WORK_DURATION)
+  const [isRunning, setIsRunning] = useState(false)
+  const [isBreak, setIsBreak] = useState(false)
+  const [alarmPlaying, setAlarmPlaying] = useState(false)
 
-  // Initialisation de l'audio context
+  const intervalRef = useRef<number | null>(null)
+  const alarmRef = useRef<HTMLAudioElement | null>(null)
+  const alarmTimeoutRef = useRef<number | null>(null)
+
+  // --- Fonctions existantes (pas de changement ici) ---
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    const min = m.toString().padStart(2, "0")
+    const sec = s.toString().padStart(2, "0")
+    return h > 0 ? `${h}h${min}:${sec}` : `${m}:${sec}`
+  }
+
+  const getCustomDuration = () => (customHours * 60 + customMinutes) * 60
+  
+  // --- useEffect pour le décompte (pas de changement majeur) ---
   useEffect(() => {
-    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-    
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close()
-      }
-    }
-  }, [])
-
-  // Fonction pour créer un son d'alarme
-  const createAlarmSound = () => {
-    if (!audioContextRef.current) return
-
-    const oscillator = audioContextRef.current.createOscillator()
-    const gainNode = audioContextRef.current.createGain()
-    
-    oscillator.connect(gainNode)
-    gainNode.connect(audioContextRef.current.destination)
-    
-    // Son d'alarme plus aigu et urgent
-    oscillator.frequency.setValueAtTime(1000, audioContextRef.current.currentTime)
-    oscillator.frequency.setValueAtTime(800, audioContextRef.current.currentTime + 0.3)
-    oscillator.frequency.setValueAtTime(1000, audioContextRef.current.currentTime + 0.6)
-    oscillator.type = 'square'
-    
-    gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime)
-    gainNode.gain.linearRampToValueAtTime(0.4, audioContextRef.current.currentTime + 0.1)
-    gainNode.gain.linearRampToValueAtTime(0.1, audioContextRef.current.currentTime + 0.5)
-    gainNode.gain.linearRampToValueAtTime(0.4, audioContextRef.current.currentTime + 0.7)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 1)
-    
-    oscillator.start(audioContextRef.current.currentTime)
-    oscillator.stop(audioContextRef.current.currentTime + 1)
-  }
-
-  // Démarrer l'alarme persistante
-  const startAlarm = () => {
-    setIsAlarmRinging(true)
-    
-    // Jouer le son immédiatement
-    createAlarmSound()
-    
-    // Répéter le son toutes les 2 secondes
-    alarmIntervalRef.current = setInterval(() => {
-      createAlarmSound()
-    }, 2000)
-    
-    // Arrêter automatiquement après 1 minute
-    alarmTimeoutRef.current = setTimeout(() => {
-      stopAlarm()
-    }, 60000)
-  }
-
-  // Arrêter l'alarme
-  const stopAlarm = () => {
-    setIsAlarmRinging(false)
-    
-    if (alarmIntervalRef.current) {
-      clearInterval(alarmIntervalRef.current)
-      alarmIntervalRef.current = null
-    }
-    
-    if (alarmTimeoutRef.current) {
-      clearTimeout(alarmTimeoutRef.current)
-      alarmTimeoutRef.current = null
-    }
-  }
-
-  // Gestion du timer principal
-  useEffect(() => {
-    if (isRunning && timeLeft > 0) {
+    if (isRunning) {
       intervalRef.current = setInterval(() => {
-        setTimeLeft(prev => prev - 1)
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            triggerAlarm()
+            return 0
+          }
+          
+          const updated = prev - 1
+          // Sauvegarder l'état
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              mode,
+              customHours,
+              customMinutes,
+              timeLeft: updated,
+              isRunning: true,
+              isBreak
+            })
+          )
+          return updated
+        })
       }, 1000)
-    } else if (timeLeft === 0) {
-      handleTimerComplete()
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
     }
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-      }
-      stopAlarm() // Nettoyer l'alarme au démontage
+      if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [isRunning, timeLeft])
+  }, [isRunning, isBreak, mode, customHours, customMinutes]) // Ajout des dépendances manquantes
 
-  // Gestion de la fin du timer
-  const handleTimerComplete = () => {
-    setIsRunning(false)
-    
-    // Démarrer l'alarme persistante
-    startAlarm()
-    
-    // Notification visuelle
-    if (Notification.permission === 'granted') {
-      new Notification('🚨 Boostrack Timer - ALARME', {
-        body: mode === 'pomodoro' 
-          ? (pomodoroPhase === 'work' ? 'Temps de travail terminé ! Prenez une pause.' : 'Pause terminée ! Retour au travail.')
-          : 'Session Deep Work terminée !',
-        icon: '🚀',
-        requireInteraction: true // La notification reste affichée
-      })
+  // --- useEffect pour charger l'état sauvegardé (pas de changement) ---
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      const data = JSON.parse(saved)
+      setMode(data.mode)
+      setCustomHours(data.customHours)
+      setCustomMinutes(data.customMinutes)
+      setTimeLeft(data.timeLeft)
+      setIsBreak(data.isBreak)
+      setIsRunning(data.isRunning)
     }
+  }, [])
+  
+  const triggerAlarm = () => {
+    setIsRunning(false)
+    setAlarmPlaying(true)
     
-    // Logique spécifique au Pomodoro (mais pas de passage automatique pendant l'alarme)
-    if (mode === 'pomodoro') {
-      if (pomodoroPhase === 'work') {
-        setPomodoroCount(prev => prev + 1)
-      }
+    // Tentative de lecture de l'alarme
+    alarmRef.current?.play().catch(error => {
+      // Au cas où la lecture échoue, on peut logger l'erreur
+      console.error("La lecture de l'alarme a échoué :", error);
+    });
+
+    alarmTimeoutRef.current = setTimeout(() => stopAlarm(), ALARM_DURATION * 1000)
+
+    if (mode === "pomodoro") {
+      // Préparer le prochain cycle (pause ou travail)
+      setIsBreak(prev => !prev); 
     }
   }
 
-  // Demander la permission pour les notifications
-  useEffect(() => {
-    if (Notification.permission === 'default') {
-      Notification.requestPermission()
+  // --- Changement dans la fonction stopAlarm ---
+  const stopAlarm = () => {
+    localStorage.removeItem(STORAGE_KEY) // On nettoie le state seulement quand l'alarme est arrêtée
+    setAlarmPlaying(false)
+    if (alarmRef.current) {
+        alarmRef.current.pause()
+        alarmRef.current.currentTime = 0
     }
-  }, [])
+    if (alarmTimeoutRef.current) clearTimeout(alarmTimeoutRef.current)
+    
+    // Après avoir arrêté l'alarme, on réinitialise le temps pour le prochain cycle
+    if (mode === "pomodoro") {
+      // isBreak a déjà été inversé dans triggerAlarm, on utilise sa nouvelle valeur
+      setTimeLeft(isBreak ? BREAK_DURATION : WORK_DURATION)
+    }
+  }
 
-  // Actions du timer
+  // --- Changement majeur dans la fonction startTimer ---
   const startTimer = () => {
-    // Arrêter l'alarme si elle sonne
-    if (isAlarmRinging) {
-      stopAlarm()
-      
-      // Si on était en mode Pomodoro, passer à la phase suivante
-      if (mode === 'pomodoro') {
-        if (pomodoroPhase === 'work') {
-          setPomodoroPhase('break')
-          setTimeLeft(BREAK_TIME)
-        } else {
-          setPomodoroPhase('work')
-          setTimeLeft(WORK_TIME)
-        }
-      }
+    // CORRECTION : Charger l'audio lors du clic sur "Démarrer"
+    // Cela "déverrouille" l'élément audio pour le navigateur
+    if (alarmRef.current) {
+      alarmRef.current.load();
     }
     
+    // Si on démarre un nouveau cycle (pas une reprise), on définit la durée
+    if (timeLeft === 0 || !isRunning) {
+        const duration =
+          mode === "pomodoro"
+            ? isBreak ? BREAK_DURATION : WORK_DURATION
+            : getCustomDuration()
+        setTimeLeft(duration)
+    }
     setIsRunning(true)
   }
 
-  const pauseTimer = () => {
-    setIsRunning(false)
-  }
-
   const resetTimer = () => {
+    stopAlarm()
     setIsRunning(false)
-    stopAlarm() // Arrêter l'alarme si elle sonne
-    
-    if (mode === 'pomodoro') {
-      setPomodoroPhase('work') // Retour au mode travail
-      setTimeLeft(WORK_TIME)
-    } else {
-      setTimeLeft((customHours * 60 + customMinutes) * 60)
+    setIsBreak(false)
+    // On doit réinitialiser le temps ici
+    const newDuration = mode === 'pomodoro' ? WORK_DURATION : getCustomDuration();
+    setTimeLeft(newDuration);
+    localStorage.removeItem(STORAGE_KEY)
+  }
+
+  // Mettre à jour le temps affiché quand les paramètres custom changent
+  useEffect(() => {
+    if (mode === "custom" && !isRunning && !alarmPlaying) {
+      setTimeLeft(getCustomDuration())
     }
-  }
+  }, [customHours, customMinutes, mode])
 
-  const switchMode = (newMode: TimerMode) => {
-    setMode(newMode)
-    setIsRunning(false)
-    stopAlarm() // Arrêter l'alarme si elle sonne
-    
-    if (newMode === 'pomodoro') {
-      setPomodoroPhase('work')
-      setTimeLeft(WORK_TIME)
-    } else {
-      setTimeLeft((customHours * 60 + customMinutes) * 60)
-    }
-  }
-
-  const updateCustomTime = (hours: number, minutes: number) => {
-    setCustomHours(hours)
-    setCustomMinutes(minutes)
-    if (mode === 'custom' && !isRunning) {
-      setTimeLeft((hours * 60 + minutes) * 60)
-    }
-  }
-
-  const setQuickTime = (totalMinutes: number) => {
-    const hours = Math.floor(totalMinutes / 60)
-    const minutes = totalMinutes % 60
-    updateCustomTime(hours, minutes)
-  }
-
-  // Formatage du temps
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
 
   return (
     <div className="timer-section">
-      <div className="timer-header">
-        <h2>Minuteur de Productivité</h2>
+      <h2>Minuteur</h2>
+
+      <div className="mode-select">
+        <label>
+          <input
+            type="radio"
+            value="pomodoro"
+            checked={mode === "pomodoro"}
+            onChange={() => {
+              setMode("pomodoro")
+              resetTimer()
+            }}
+          />
+          Pomodoro (25/5)
+        </label>
+        <label>
+          <input
+            type="radio"
+            value="custom"
+            checked={mode === "custom"}
+            onChange={() => {
+              setMode("custom")
+              resetTimer()
+            }}
+          />
+          Personnalisé
+        </label>
       </div>
 
-      {/* Sélection du mode */}
-      <div className="mode-selector">
-        <button 
-          className={`mode-btn ${mode === 'pomodoro' ? 'active' : ''}`}
-          onClick={() => switchMode('pomodoro')}
-        >
-          <Clock size={18} />
-          Pomodoro
-        </button>
-        <button 
-          className={`mode-btn ${mode === 'custom' ? 'active' : ''}`}
-          onClick={() => switchMode('custom')}
-        >
-          <Focus size={18} />
-          Deep Work
-        </button>
-      </div>
+      {mode === "custom" && (
+        <div className="custom-time-input">
+          <label>
+            Heures :
+            <input
+              type="number"
+              min={0}
+              max={12}
+              value={customHours}
+              onChange={(e) => setCustomHours(parseInt(e.target.value))}
+            />
+          </label>
+          <label>
+            Minutes :
+            <input
+              type="number"
+              min={0}
+              max={59}
+              value={customMinutes}
+              onChange={(e) => setCustomMinutes(parseInt(e.target.value))}
+            />
+          </label>
+        </div>
+      )}
 
-      {/* Affichage du timer principal */}
       <div className="timer-display">
-        <div className={`timer-circle ${isRunning ? 'running' : ''} ${isAlarmRinging ? 'alarm-ringing' : ''} ${mode === 'pomodoro' && pomodoroPhase === 'break' ? 'break-mode' : ''}`}>
-          <div className="timer-time">
-            {formatTime(timeLeft)}
-          </div>
-          <div className="timer-label">
-            {isAlarmRinging 
-              ? '🚨 ALARME !'
-              : mode === 'pomodoro' 
-                ? (pomodoroPhase === 'work' ? 'Travail' : 'Pause')
-                : 'Deep Work'
-            }
-          </div>
-        </div>
-        
-        {/* Bouton d'arrêt d'alarme */}
-        {isAlarmRinging && (
-          <button 
-            className="stop-alarm-btn"
-            onClick={stopAlarm}
-          >
-            🔇 Arrêter l'alarme
-          </button>
-        )}
+        <h1>{formatTime(timeLeft)}</h1>
+        {mode === "pomodoro" && <p>{isBreak ? <>Pause <FaMugHot size={16} /></> : <>Travail <FaLaptopCode size={16} /></>}</p>}
       </div>
 
-      {/* Informations Pomodoro */}
-      {mode === 'pomodoro' && (
-        <div className="pomodoro-info">
-          <div className="pomodoro-counter">
-            <Coffee size={16} />
-            <span>Sessions complétées : {pomodoroCount}</span>
-          </div>
-          <div className="phase-indicator">
-            <span className={`phase-dot ${pomodoroPhase === 'work' ? 'active' : ''}`}>Travail</span>
-            <span className={`phase-dot ${pomodoroPhase === 'break' ? 'active' : ''}`}>Pause</span>
-          </div>
-        </div>
-      )}
-
-      {/* Contrôles du timer */}
       <div className="timer-controls">
-        <button 
-          className="control-btn reset-btn"
-          onClick={resetTimer}
-        >
-          <RotateCcw size={20} />
-          Reset
-        </button>
-        
-        <button 
-          className={`control-btn primary-btn ${isRunning ? 'pause' : 'start'} ${isAlarmRinging ? 'alarm-mode' : ''}`}
-          onClick={isRunning ? pauseTimer : startTimer}
-        >
-          {isAlarmRinging 
-            ? <>🔔 Commencer la suite</>
-            : isRunning 
-              ? <><Pause size={24} /> Pause</> 
-              : <><Play size={24} /> Start</>
-          }
-        </button>
+        {alarmPlaying ? (
+          <button onClick={stopAlarm}>Arrêter l’alarme <FaBellSlash size={16} /></button>
+        ) : isRunning ? (
+          <button onClick={() => setIsRunning(false)}>Pause <FaPause size={16} /></button>
+        ) : (
+          <button onClick={startTimer}>Démarrer <FaPlay size={16} /></button>
+        )}
+        <button onClick={resetTimer}>Réinitialiser <FaRedo size={16} /></button>
       </div>
 
-      {/* Configuration du temps personnalisé */}
-      {mode === 'custom' && (
-        <div className="custom-time-config">
-          <h3>⏰ Configurer la durée</h3>
-          
-          <div className="time-inputs">
-            <div className="time-input-group">
-              <label>Heures</label>
-              <input
-                type="number"
-                min="0"
-                max="12"
-                value={customHours}
-                onChange={(e) => updateCustomTime(parseInt(e.target.value) || 0, customMinutes)}
-                disabled={isRunning}
-              />
-            </div>
-            <div className="time-separator">:</div>
-            <div className="time-input-group">
-              <label>Minutes</label>
-              <input
-                type="number"
-                min="0"
-                max="59"
-                value={customMinutes}
-                onChange={(e) => updateCustomTime(customHours, parseInt(e.target.value) || 0)}
-                disabled={isRunning}
-              />
-            </div>
-          </div>
-          
-          <div className="quick-presets">
-            <h4>🚀 Presets Deep Work</h4>
-            <div className="preset-grid">
-              <button onClick={() => setQuickTime(25)} disabled={isRunning}>25min</button>
-              <button onClick={() => setQuickTime(45)} disabled={isRunning}>45min</button>
-              <button onClick={() => setQuickTime(90)} disabled={isRunning}>1h30</button>
-              <button onClick={() => setQuickTime(120)} disabled={isRunning}>2h</button>
-              <button onClick={() => setQuickTime(180)} disabled={isRunning}>3h</button>
-              <button onClick={() => setQuickTime(240)} disabled={isRunning}>4h</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Conseils d'utilisation */}
-      <div className="timer-tips">
-        <h4>💡 Conseils</h4>
-        <ul>
-          <li><strong>Pomodoro :</strong> Cycles automatiques 25min travail → 5min pause</li>
-          <li><strong>Deep Work :</strong> Sessions longues pour concentration maximale (1h30-4h)</li>
-          <li>Activez les notifications pour être alerté à la fin de chaque session</li>
-        </ul>
-      </div>
+      <audio
+        ref={alarmRef}
+        src="/alarm.mp3"
+        preload="auto"
+      />
     </div>
   )
 }

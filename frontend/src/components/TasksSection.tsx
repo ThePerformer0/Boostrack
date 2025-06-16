@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { getTasks, createTask, deleteTask, updateTask } from "../services/taskService"
 import type { Task } from "../services/taskService"
-import { Plus, CheckCircle2, Circle, Trash2 } from "lucide-react"
+import { FaPlus, FaCheckCircle, FaRegCircle, FaTrash } from "react-icons/fa"
 import "../styles/tasks.css"
 
 export default function TasksSection() {
@@ -44,7 +44,7 @@ export default function TasksSection() {
             className="task-input"
           />
           <button onClick={handleAdd} className="add-btn" disabled={!newTitle.trim()}>
-            <Plus size={20} />
+            <FaPlus size={20} /> {/* Nouvelle icône Plus */}
           </button>
         </div>
       </div>
@@ -57,10 +57,10 @@ export default function TasksSection() {
           tasks.map(task => (
             <div key={task.id} className={`task-item ${task.done ? "completed" : ""}`}>
               <button onClick={() => handleToggle(task.id)}>
-                {task.done ? <CheckCircle2 /> : <Circle />}
+                {task.done ? <FaCheckCircle /> : <FaRegCircle />} {/* Nouvelles icônes de coche */}
               </button>
               <span>{task.title}</span>
-              <button onClick={() => handleDelete(task.id)}><Trash2 /></button>
+              <button onClick={() => handleDelete(task.id)}><FaTrash /></button> {/* Nouvelle icône Trash */}
             </div>
           ))
         )}
